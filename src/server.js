@@ -14,8 +14,7 @@ const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
 
 const app = express();
-const PORT = 3000;
-const PORT_FILE = 'port.txt';
+
 // Config
 app.set('view engine', 'ejs');
 app.set('views', path.join(PROJECT_ROOT, 'views'));
@@ -208,21 +207,36 @@ app.post('/admin/settings', requireAuth, requireAdmin, (req, res) => {
   res.redirect('/admin');
 });
 
-const startServer = (preferredPort) => {
-  // Try to listen on the preferred port
-  const server = app.listen(preferredPort, () => {
-    const actualPort = server.address().port;
-    console.log(`Server running at http://localhost:${actualPort}`);
 
-    // Save the successfully bound port to file for next time
-    fs.writeFileSync(PORT_FILE, actualPort.toString());
+const PORT_FILE = 'port.txt';
+
+const startServer = (preferredPort) => {
+  // Use a standard function() so 'this' refers to the server instance
+  const server = app.listen(preferredPort, function () {
+    const address = this.address();
+    
+    // Safety check
+    if (!address) {
+        console.error("Server started, but address is not available.");
+        return;
+    }
+
+    const actualPort = address.port;
+    console.log(`Server running at http://localhost:${actualPort}`);
+    
+    // Save the working port to file
+    try {
+        fs.writeFileSync(PORT_FILE, actualPort.toString());
+    } catch (e) {
+        console.error("Could not save port to file:", e);
+    }
   });
 
-  // Handle errors (specifically if the port is busy)
+  // Handle port conflicts
   server.on('error', (err) => {
     if (err.code === 'EADDRINUSE') {
       console.log(`Port ${preferredPort} is busy, finding a new available port...`);
-      // Retry with port 0 (OS will automatically assign an available port)
+      // Retry with port 0 (OS will assign a random available port)
       startServer(0);
     } else {
       console.error('Server error:', err);
