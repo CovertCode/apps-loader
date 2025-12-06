@@ -1,0 +1,5 @@
+/node_modules
+/apps
+/uploads
+database.sqlite
+package-lock.json

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - HTML Hoster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-900">
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Left Side: Logo & Admin Link -->
+                <div class="flex items-center gap-6">
+                    <span class="text-xl font-bold text-indigo-600 tracking-tight">HTML Hoster</span>
+                    
+                    <% if (user.role === 'admin') { %>
+                        <a href="/admin" class="inline-flex items-center px-3 py-1 rounded-md text-xs font-medium bg-gray-900 text-white hover:bg-gray-700 transition-colors">
+                            Admin Panel
+                        </a>
+                    <% } %>
+                </div>
+
+                <!-- Right Side: User Status & Logout -->
+                <div class="flex items-center gap-4">
+                    <div class="flex flex-col items-end">
+                        <span class="text-sm font-medium text-gray-700"><%= user.username %></span>
+                        <% if(user.is_approved) { %> 
+                            <span class="text-[10px] uppercase tracking-wider font-bold text-green-600 bg-green-50 px-2 py-0.5 rounded-full border border-green-200">Verified</span>
+                        <% } else { %>
+                            <span class="text-[10px] uppercase tracking-wider font-bold text-yellow-600 bg-yellow-50 px-2 py-0.5 rounded-full border border-yellow-200">Pending</span>
+                        <% } %>
+                    </div>
+                    <div class="h-8 w-px bg-gray-200 mx-2"></div>
+                    <a href="/logout" class="text-sm font-medium text-red-600 hover:text-red-800 transition-colors">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto py-10 px-4 sm:px-6 lg:px-8">
+        
+        <!-- Error Alert -->
+        <% if (error) { %>
+            <div class="bg-red-50 border-l-4 border-red-500 p-4 mb-8 rounded-r-md shadow-sm">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <p class="text-sm text-red-700"><%= error %></p>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+
+        <!-- Logic: Show Upload Form ONLY if approved -->
+        <% if (user.is_approved === 1) { %>
+            
+            <!-- Upload Section -->
+            <div class="bg-white shadow rounded-lg mb-10 overflow-hidden border border-gray-200">
+                <div class="px-6 py-5 border-b border-gray-200 bg-gray-50">
+                    <h3 class="text-lg font-medium leading-6 text-gray-900">Deploy New App</h3>
+                    <p class="mt-1 text-sm text-gray-500">Upload an HTML file to create a statically hosted mini-site.</p>
+                </div>
+                <div class="p-6">
+                    <form action="/upload" method="POST" enctype="multipart/form-data" class="grid grid-cols-1 gap-y-6 gap-x-4 sm:grid-cols-6 items-end">
+                        
+                        <!-- Slug Input -->
+                        <div class="sm:col-span-3">
+                            <label for="slug" class="block text-sm font-medium text-gray-700">URL Slug</label>
+                            <div class="mt-1 flex rounded-md shadow-sm">
+                                <span class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-100 text-gray-500 text-sm">
+                                    /sites/
+                                </span>
+                                <input 
+                                    type="text" 
+                                    name="slug" 
+                                    id="slugInput" 
+                                    required 
+                                    placeholder="my-cool-game" 
+                                    oninput="sanitizeInput(this)"
+                                    class="flex-1 min-w-0 block w-full px-3 py-2 rounded-none rounded-r-md border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+                                >
+                            </div>
+                            <p class="mt-1 text-xs text-gray-500">Preview: <span id="slugPreview" class="font-mono text-indigo-600 font-medium">...</span></p>
+                        </div>
+
+                        <!-- File Input -->
+                        <div class="sm:col-span-2">
+                            <label for="htmlFile" class="block text-sm font-medium text-gray-700">HTML File</label>
+                            <input 
+                                type="file" 
+                                name="htmlFile" 
+                                id="htmlFile" 
+                                accept=".html" 
+                                required 
+                                class="mt-1 block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition-colors"
+                            >
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="sm:col-span-1">
+                            <button type="submit" class="w-full bg-indigo-600 border border-transparent rounded-md shadow-sm py-2 px-4 inline-flex justify-center text-sm font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                Deploy
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+        <% } else { %>
+            
+            <!-- Pending Approval Warning -->
+            <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-10 rounded shadow-sm">
+                <div class="flex">
+                    <div class="flex-shrink-0">
+                        <svg class="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                            <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                        </svg>
+                    </div>
+                    <div class="ml-3">
+                        <h3 class="text-sm font-medium text-yellow-800">Account Pending Approval</h3>
+                        <div class="mt-2 text-sm text-yellow-700">
+                            <p>An administrator must approve your account before you can start hosting files. Please contact the admin or check back later.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        <% } %>
+
+        <!-- Deployments List -->
+        <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">Your Deployments</h3>
+        
+        <div class="bg-white shadow overflow-hidden sm:rounded-md border border-gray-200">
+            <ul role="list" class="divide-y divide-gray-200">
+                
+                <% if (apps.length === 0) { %>
+                    <li class="px-6 py-10 text-center flex flex-col items-center justify-center">
+                        <svg class="h-12 w-12 text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                        </svg>
+                        <p class="text-gray-500 text-sm">No apps deployed yet.</p>
+                    </li>
+                <% } %>
+
+                <% apps.forEach(app => { %>
+                <li class="px-6 py-4 hover:bg-gray-50 transition-colors">
+                    <div class="flex items-center justify-between flex-wrap gap-4">
+                        
+                        <!-- App Info -->
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center gap-2">
+                                <p class="text-sm font-medium text-indigo-600 truncate max-w-xs">
+                                    <%= app.slug %>
+                                </p>
+                                <span class="text-gray-300">|</span>
+                                <span class="text-xs text-gray-500 truncate"><%= app.original_name %></span>
+                            </div>
+                            <div class="mt-2 flex items-center text-sm text-gray-500 gap-3">
+                                <a href="/sites/<%= app.slug %>/" target="_blank" class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800 hover:bg-green-200 transition-colors">
+                                    Open Live URL ↗
+                                </a>
+                                <span class="text-xs text-gray-400">Deployed: <%= new Date(app.created_at).toLocaleDateString() %></span>
+                            </div>
+                        </div>
+
+                        <!-- Actions (Re-upload) -->
+                        <% if (user.is_approved === 1) { %>
+                        <div class="flex-shrink-0">
+                            <form action="/update" method="POST" enctype="multipart/form-data">
+                                <input type="hidden" name="slug" value="<%= app.slug %>">
+                                <label class="cursor-pointer inline-flex items-center px-3 py-1.5 border border-gray-300 shadow-sm text-xs font-medium rounded text-gray-700 bg-white hover:bg-gray-50 hover:text-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                    <svg class="h-4 w-4 mr-1.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                                    </svg>
+                                    Re-upload File
+                                    <input type="file" name="htmlFile" accept=".html" class="hidden" onchange="this.form.submit()">
+                                </label>
+                            </form>
+                        </div>
+                        <% } %>
+
+                    </div>
+                </li>
+                <% }); %>
+            </ul>
+        </div>
+    </main>
+
+    <!-- Client-side script for Slug generation -->
+    <script>
+        function sanitizeInput(input) {
+            const original = input.value;
+            // 1. Lowercase
+            // 2. Remove accents
+            // 3. Replace spaces/underscores with -
+            // 4. Remove anything that isn't a-z, 0-9, or -
+            // 5. Collapse multiple dashes
+            const slug = original
+                .toString()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
+                .toLowerCase()
+                .trim()
+                .replace(/[\s_]+/g, '-')
+                .replace(/[^a-z0-9-]/g, '')
+                .replace(/-+/g, '-');
+
+            // Show preview
+            document.getElementById('slugPreview').textContent = slug || '...';
+        }
+    </script>
+</body>
+</html>
