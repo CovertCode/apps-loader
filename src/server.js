@@ -15,7 +15,7 @@ const PROJECT_ROOT = path.join(__dirname, '..');
 
 const app = express();
 const PORT = 3000;
-
+const PORT_FILE = 'port.txt';
 // Config
 app.set('view engine', 'ejs');
 app.set('views', path.join(PROJECT_ROOT, 'views'));
@@ -65,7 +65,7 @@ app.post('/register', (req, res) => {
   const { username, password } = req.body;
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
-    
+
     // Check Auto-Approve Setting
     const autoApproveStr = db.getSetting('auto_approve'); // returns string '0' or '1'
     const isApproved = autoApproveStr === '1' ? 1 : 0;
@@ -189,25 +189,58 @@ app.use('/sites/:slug', (req, res, next) => {
 // --- ADMIN ROUTES ---
 
 app.get('/admin', requireAuth, requireAdmin, (req, res) => {
-    const users = db.getAllUsers();
-    const autoApprove = db.getSetting('auto_approve') === '1';
-    res.render('admin', { user: req.user, users, autoApprove });
+  const users = db.getAllUsers();
+  const autoApprove = db.getSetting('auto_approve') === '1';
+  res.render('admin', { user: req.user, users, autoApprove });
 });
 
 app.post('/admin/approve', requireAuth, requireAdmin, (req, res) => {
-    const { userId, action } = req.body; // action: 'approve' or 'revoke'
-    const status = action === 'approve' ? 1 : 0;
-    db.updateUserStatus(userId, status);
-    res.redirect('/admin');
+  const { userId, action } = req.body; // action: 'approve' or 'revoke'
+  const status = action === 'approve' ? 1 : 0;
+  db.updateUserStatus(userId, status);
+  res.redirect('/admin');
 });
 
 app.post('/admin/settings', requireAuth, requireAdmin, (req, res) => {
-    const { autoApprove } = req.body; // "on" if checked, undefined if not
-    const val = autoApprove ? '1' : '0';
-    db.setSetting('auto_approve', val);
-    res.redirect('/admin');
+  const { autoApprove } = req.body; // "on" if checked, undefined if not
+  const val = autoApprove ? '1' : '0';
+  db.setSetting('auto_approve', val);
+  res.redirect('/admin');
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
-});
+const startServer = (preferredPort) => {
+  // Try to listen on the preferred port
+  const server = app.listen(preferredPort, () => {
+    const actualPort = server.address().port;
+    console.log(`Server running at http://localhost:${actualPort}`);
+
+    // Save the successfully bound port to file for next time
+    fs.writeFileSync(PORT_FILE, actualPort.toString());
+  });
+
+  // Handle errors (specifically if the port is busy)
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      console.log(`Port ${preferredPort} is busy, finding a new available port...`);
+      // Retry with port 0 (OS will automatically assign an available port)
+      startServer(0);
+    } else {
+      console.error('Server error:', err);
+    }
+  });
+};
+
+// --- Execution Logic ---
+
+let portToUse = 3000; // Default fallback
+
+// 1. Try to load previously saved port
+if (fs.existsSync(PORT_FILE)) {
+  const savedPort = parseInt(fs.readFileSync(PORT_FILE, 'utf-8').trim());
+  if (!isNaN(savedPort)) {
+    portToUse = savedPort;
+  }
+}
+
+// 2. Start the server
+startServer(portToUse);
