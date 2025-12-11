@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Fiddle - HTML Hoster</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        textarea::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        textarea::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+
+        textarea::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+
+        .resizer {
+            width: 5px;
+            cursor: col-resize;
+            background-color: #374151;
+            z-index: 10;
+        }
+
+        .resizer:hover,
+        .resizer.active {
+            background-color: #3b82f6;
+            width: 8px;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-900 h-screen flex flex-col text-white overflow-hidden">
+
+    <!-- Navbar -->
+    <nav class="h-14 bg-gray-800 border-b border-gray-700 flex items-center justify-between px-4 shrink-0">
+        <div class="flex items-center gap-4">
+            <a href="/dashboard" class="text-gray-400 hover:text-white transition">&larr; Dashboard</a>
+            <span class="font-bold text-lg">JS<span class="text-blue-500">Fiddle</span>Clone</span>
+            <% if (prefill) { %>
+                <span class="text-xs text-gray-500 bg-gray-700 px-2 py-1 rounded">Editing: <%= prefill.slug %></span>
+                <% } %>
+        </div>
+        <div class="flex items-center gap-3">
+            <button onclick="runCode()"
+                class="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white px-4 py-1.5 rounded text-sm font-medium transition">Run</button>
+            <button onclick="openSaveModal()"
+                class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-1.5 rounded text-sm font-medium transition">
+                <%= prefill ? 'Update Project' : 'Save Project' %>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Workspace -->
+    <div class="flex-1 flex overflow-hidden" id="workspace">
+        <div id="editorPanel" class="flex flex-col min-w-[200px]" style="width: 40%;">
+            <!-- Tabs -->
+            <div class="flex bg-gray-800 border-b border-gray-700">
+                <button onclick="switchTab('html')" id="tab-html"
+                    class="flex-1 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-400 bg-gray-700/50">HTML</button>
+                <button onclick="switchTab('css')" id="tab-css"
+                    class="flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400">CSS</button>
+                <button onclick="switchTab('js')" id="tab-js"
+                    class="flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400">JS</button>
+            </div>
+
+            <!-- Editors with Prefill Values -->
+            <div class="relative flex-1 bg-gray-900">
+                <!-- FIX: Use <%- %> instead of <%= %> to prevent HTML escaping -->
+                <textarea id="htmlInput"
+                    class="editor-area w-full h-full bg-[#1e1e1e] text-gray-100 p-4 font-mono text-sm resize-none focus:outline-none"
+                    spellcheck="false" placeholder="<!-- HTML -->"><%- prefill ? prefill.html : '' %></textarea>
+
+                <textarea id="cssInput"
+                    class="editor-area hidden w-full h-full bg-[#1e1e1e] text-gray-100 p-4 font-mono text-sm resize-none focus:outline-none"
+                    spellcheck="false" placeholder="/* CSS */"><%- prefill ? prefill.css : '' %></textarea>
+
+                <textarea id="jsInput"
+                    class="editor-area hidden w-full h-full bg-[#1e1e1e] text-gray-100 p-4 font-mono text-sm resize-none focus:outline-none"
+                    spellcheck="false" placeholder="// JS"><%- prefill ? prefill.js : '' %></textarea>
+            </div>
+        </div>
+        <div id="resizer" class="resizer flex-shrink-0"></div>
+        <div class="flex-1 bg-white flex flex-col min-w-[200px] relative">
+            <iframe id="preview" class="w-full h-full border-none bg-white"
+                sandbox="allow-scripts allow-modals"></iframe>
+            <div id="iframeOverlay" class="absolute inset-0 hidden z-20"></div>
+        </div>
+    </div>
+
+    <!-- Save Modal -->
+    <div id="saveModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div class="bg-white text-gray-900 p-6 rounded-lg w-96 shadow-xl">
+            <h2 class="text-xl font-bold mb-4">
+                <%= prefill ? 'Update Project' : 'Save Project' %>
+            </h2>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Project Title</label>
+                <input type="text" id="saveTitle" value="<%= prefill ? prefill.title : '' %>"
+                    placeholder="My Fiddle Experiment"
+                    class="block w-full border border-gray-300 rounded-md px-3 py-2 text-sm">
+            </div>
+
+            <div class="mb-4">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Slug (URL)</label>
+                <div class="flex rounded-md shadow-sm">
+                    <span
+                        class="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">/sites/</span>
+                    <input type="text" id="saveSlug" value="<%= prefill ? prefill.slug : '' %>" <%=prefill ? 'readonly'
+                        : '' %> class="flex-1 block w-full border border-gray-300 rounded-r-md px-3 py-2 text-sm <%=
+                        prefill ? 'bg-gray-100 cursor-not-allowed' : '' %>">
+                </div>
+                <% if (!prefill) { %>
+                    <p class="text-xs text-gray-500 mt-1">Leave empty for a random name.</p>
+                    <% } %>
+            </div>
+
+            <div class="flex justify-end gap-3">
+                <button onclick="closeSaveModal()" class="px-4 py-2 text-gray-600 hover:text-gray-800">Cancel</button>
+                <button onclick="submitSave()" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                    <%= prefill ? 'Update' : 'Save' %>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ... (Switch Tab, Run Code, Resize Logic remains same) ...
+        function switchTab(type) {
+            document.querySelectorAll('.editor-area').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('button[id^="tab-"]').forEach(btn => {
+                btn.className = 'flex-1 py-2 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 focus:outline-none';
+            });
+            document.getElementById(`${type}Input`).classList.remove('hidden');
+            document.getElementById(`tab-${type}`).className = 'flex-1 py-2 text-sm font-medium border-b-2 border-blue-500 text-blue-400 bg-gray-700/50 focus:outline-none';
+        }
+
+        function runCode() {
+            const html = document.getElementById('htmlInput').value;
+            const css = document.getElementById('cssInput').value;
+            const js = document.getElementById('jsInput').value;
+            const source = `<!DOCTYPE html><html><head><style>${css}</style></head><body>${html}<script>try{${js}}catch(e){console.error(e)}<\/script></body></html>`;
+            document.getElementById('preview').srcdoc = source;
+        }
+
+        const resizer = document.getElementById('resizer');
+        const leftSide = document.getElementById('editorPanel');
+        const overlay = document.getElementById('iframeOverlay');
+        let x = 0; let leftWidth = 0;
+
+        resizer.addEventListener('mousedown', (e) => {
+            x = e.clientX; leftWidth = leftSide.getBoundingClientRect().width;
+            document.addEventListener('mousemove', onMouseMove);
+            document.addEventListener('mouseup', onMouseUp);
+            overlay.classList.remove('hidden');
+            document.body.style.cursor = 'col-resize';
+        });
+
+        function onMouseMove(e) { leftSide.style.width = `${leftWidth + (e.clientX - x)}px`; }
+        function onMouseUp() {
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+            overlay.classList.add('hidden');
+            document.body.style.cursor = 'default';
+        }
+
+        // --- Save Logic ---
+        function openSaveModal() { document.getElementById('saveModal').classList.remove('hidden'); }
+        function closeSaveModal() { document.getElementById('saveModal').classList.add('hidden'); }
+
+        async function submitSave() {
+            const slug = document.getElementById('saveSlug').value;
+            const title = document.getElementById('saveTitle').value;
+            const data = {
+                html: document.getElementById('htmlInput').value,
+                css: document.getElementById('cssInput').value,
+                js: document.getElementById('jsInput').value,
+                slug: slug,
+                title: title
+            };
+
+            try {
+                const res = await fetch('/fiddle/save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await res.json();
+                if (result.success) {
+                    window.location.href = result.redirect;
+                } else {
+                    alert('Error: ' + (result.error || 'Unknown error'));
+                }
+            } catch (e) {
+                alert('Connection error');
+            }
+        }
+
+        document.querySelectorAll('textarea').forEach(el => {
+            el.addEventListener('keydown', function (e) {
+                if (e.key === 'Tab') { e.preventDefault(); this.setRangeText('  ', this.selectionStart, this.selectionStart, 'end'); }
+            });
+        });
+
+        // Run on load if editing
+        window.onload = runCode;
+    </script>
+</body>
+
+</html>

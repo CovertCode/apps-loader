@@ -8,8 +8,8 @@ db.exec(`
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE,
     password TEXT,
-    role TEXT DEFAULT 'user',         -- 'admin' or 'user'
-    is_approved INTEGER DEFAULT 0     -- 0 = pending, 1 = approved
+    role TEXT DEFAULT 'user',
+    is_approved INTEGER DEFAULT 0
   );
 
   CREATE TABLE IF NOT EXISTS apps (
@@ -17,7 +17,9 @@ db.exec(`
     user_id INTEGER,
     slug TEXT UNIQUE,
     original_name TEXT,
+    title TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    is_featured INTEGER DEFAULT 0,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
 
@@ -26,12 +28,10 @@ db.exec(`
     value TEXT
   );
 
-  -- Default Setting: Auto Approve is OFF (0)
   INSERT OR IGNORE INTO settings (key, value) VALUES ('auto_approve', '0');
 `);
 
 // --- User Functions ---
-
 export const createUser = (username, password, isApproved = 0, role = 'user') => {
   const stmt = db.prepare('INSERT INTO users (username, password, is_approved, role) VALUES (?, ?, ?, ?)');
   return stmt.run(username, password, isApproved, role);
@@ -57,11 +57,10 @@ export const updateUserStatus = (userId, isApproved) => {
   return stmt.run(isApproved, userId);
 };
 
-// --- App Functions (Unchanged) ---
-
-export const createApp = (userId, slug, originalName) => {
-  const stmt = db.prepare('INSERT INTO apps (user_id, slug, original_name) VALUES (?, ?, ?)');
-  return stmt.run(userId, slug, originalName);
+// --- App Functions ---
+export const createApp = (userId, slug, originalName, title) => {
+  const stmt = db.prepare('INSERT INTO apps (user_id, slug, original_name, title) VALUES (?, ?, ?, ?)');
+  return stmt.run(userId, slug, originalName, title);
 };
 
 export const getAppsByUser = (userId) => {
@@ -74,13 +73,46 @@ export const getAppBySlug = (slug) => {
   return stmt.get(slug);
 };
 
-export const updateAppTimestamp = (slug, originalName) => {
-  const stmt = db.prepare('UPDATE apps SET original_name = ?, created_at = CURRENT_TIMESTAMP WHERE slug = ?');
-  return stmt.run(originalName, slug);
+// CHANGED: Flexible update function
+export const updateApp = (slug, title, originalName) => {
+  if (originalName) {
+    // Update Title AND File
+    const stmt = db.prepare('UPDATE apps SET title = ?, original_name = ?, created_at = CURRENT_TIMESTAMP WHERE slug = ?');
+    return stmt.run(title, originalName, slug);
+  } else {
+    // Update Title ONLY
+    const stmt = db.prepare('UPDATE apps SET title = ?, created_at = CURRENT_TIMESTAMP WHERE slug = ?');
+    return stmt.run(title, slug);
+  }
+};
+
+export const getAllApps = () => {
+  const stmt = db.prepare(`
+    SELECT apps.*, users.username as author 
+    FROM apps 
+    JOIN users ON apps.user_id = users.id 
+    ORDER BY apps.created_at DESC
+  `);
+  return stmt.all();
+};
+
+export const getFeaturedApps = () => {
+  const stmt = db.prepare(`
+    SELECT apps.*, users.username as author 
+    FROM apps 
+    JOIN users ON apps.user_id = users.id 
+    WHERE apps.is_featured = 1 
+    ORDER BY apps.created_at DESC
+  `);
+  return stmt.all();
+};
+
+export const updateAppFeatured = (appId, isFeatured) => {
+  const stmt = db.prepare('UPDATE apps SET is_featured = ? WHERE id = ?');
+  return stmt.run(isFeatured, appId);
 };
 
 // --- Settings Functions ---
-
 export const getSetting = (key) => {
   const stmt = db.prepare('SELECT value FROM settings WHERE key = ?');
   const result = stmt.get(key);

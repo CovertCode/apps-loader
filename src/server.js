@@ -8,42 +8,89 @@ import bcrypt from 'bcryptjs';
 import * as db from './db.js';
 import { requireAuth, requireAdmin, requireApproval, generateToken } from './middleware.js';
 
-// Setup paths for ES Modules
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const PROJECT_ROOT = path.join(__dirname, '..');
+const PORT_FILE = 'port.txt';
 
 const app = express();
 
-// Config
 app.set('view engine', 'ejs');
 app.set('views', path.join(PROJECT_ROOT, 'views'));
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(PROJECT_ROOT, 'public')));
-
-// Multer Setup (Temp storage)
 const upload = multer({ dest: path.join(PROJECT_ROOT, 'uploads') });
 
-// --- Helper: Slugify ---
+// --- Helper Functions ---
 const createSlug = (str) => {
   if (!str) return '';
-  return str
-    .toString()
-    .normalize('NFD')               // Split accented characters (e.g., é -> e + ')
-    .replace(/[\u0300-\u036f]/g, '')// Remove accent marks
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9\s-]/g, '')   // Remove invalid chars (keep letters, numbers, spaces, hyphens)
-    .replace(/[\s_]+/g, '-')        // Replace spaces and underscores with hyphens
-    .replace(/-+/g, '-');           // Collapse multiple hyphens
+  return str.toString().normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().trim().replace(/[^a-z0-9\s-]/g, '').replace(/[\s_]+/g, '-').replace(/-+/g, '-');
 };
 
+const moveAndRenameFile = (tempPath, slug) => {
+  const appDir = path.join(PROJECT_ROOT, 'apps', slug);
+  if (!fs.existsSync(appDir)) fs.mkdirSync(appDir, { recursive: true });
+  fs.renameSync(tempPath, path.join(appDir, 'index.html'));
+};
 
+const saveStringAsFile = (content, slug) => {
+  const appDir = path.join(PROJECT_ROOT, 'apps', slug);
+  if (!fs.existsSync(appDir)) fs.mkdirSync(appDir, { recursive: true });
+  fs.writeFileSync(path.join(appDir, 'index.html'), content);
+};
 
-// --- Auth Routes ---
+const parseFileContent = (fullContent) => {
+    let html = fullContent;
+    let css = '';
+    let js = '';
 
-app.get('/', (req, res) => res.redirect('/login'));
+    // 1. Extract and Remove Inline CSS (<style>...</style>)
+    // We look for style tags, append content to css, and replace with empty string
+    html = html.replace(/<style[^>]*>([\s\S]*?)<\/style>/gi, (match, content) => {
+        css += content.trim() + '\n\n';
+        return ''; 
+    });
+
+    // 2. Extract and Remove Inline JS (<script>...</script> without src)
+    // We only extract scripts that do NOT have a 'src=' attribute
+    html = html.replace(/<script([^>]*)>([\s\S]*?)<\/script>/gi, (match, attributes, content) => {
+        if (attributes && attributes.includes('src=')) {
+            return match; // Keep external scripts in HTML
+        }
+        js += content.trim() + '\n\n';
+        return ''; // Remove inline scripts from HTML
+    });
+
+    // 3. Extract BODY content
+    // We try to find the body tag. If found, we take its inner HTML.
+    // If not found (e.g. user just saved a div), we assume the whole remaining string is HTML.
+    const bodyMatch = html.match(/<body[^>]*>([\s\S]*?)<\/body>/i);
+    if (bodyMatch) {
+        html = bodyMatch[1];
+    } else {
+        // Cleanup: If no body tag, remove head/html/doctype tags to just get the "content"
+        html = html
+            .replace(/<!DOCTYPE html>/i, '')
+            .replace(/<html[^>]*>/i, '')
+            .replace(/<\/html>/i, '')
+            .replace(/<head[^>]*>([\s\S]*?)<\/head>/i, '')
+            .trim();
+    }
+
+    return { 
+        html: html.trim(), 
+        css: css.trim(), 
+        js: js.trim() 
+    };
+};
+
+// --- PUBLIC ROUTES ---
+app.get('/', (req, res) => {
+  const featuredApps = db.getFeaturedApps();
+  res.render('home', { featuredApps, userToken: req.cookies.token });
+});
 
 app.get('/login', (req, res) => res.render('login', { error: null }));
 
@@ -64,11 +111,8 @@ app.post('/register', (req, res) => {
   const { username, password } = req.body;
   try {
     const hashedPassword = bcrypt.hashSync(password, 10);
-
-    // Check Auto-Approve Setting
-    const autoApproveStr = db.getSetting('auto_approve'); // returns string '0' or '1'
+    const autoApproveStr = db.getSetting('auto_approve');
     const isApproved = autoApproveStr === '1' ? 1 : 0;
-
     db.createUser(username, hashedPassword, isApproved);
     res.redirect('/login');
   } catch (err) {
@@ -78,92 +122,139 @@ app.post('/register', (req, res) => {
 
 app.get('/logout', (req, res) => {
   res.clearCookie('token');
-  res.redirect('/login');
+  res.redirect('/');
 });
 
-// --- Dashboard & App Logic ---
-
+// --- DASHBOARD ---
 app.get('/dashboard', requireAuth, (req, res) => {
   const apps = db.getAppsByUser(req.user.id);
   res.render('dashboard', { user: req.user, apps, error: null });
 });
 
-// Helper to move file
-const moveAndRenameFile = (tempPath, slug) => {
-  const appDir = path.join(PROJECT_ROOT, 'apps', slug);
+// --- FIDDLE ---
+app.get('/fiddle', requireAuth, (req, res) => {
+    res.render('fiddle', { user: req.user, prefill: null });
+});
 
-  // Create directory if not exists
-  if (!fs.existsSync(appDir)) {
-    fs.mkdirSync(appDir, { recursive: true });
-  }
 
-  const targetPath = path.join(appDir, 'index.html');
+app.post('/fiddle/save', requireAuth, requireApproval, (req, res) => {
+    const { html, css, js, slug, title } = req.body;
+    
+    // Validate or Generate Slug
+    let safeSlug = createSlug(slug);
+    if (!safeSlug) safeSlug = 'fiddle-' + Math.random().toString(36).substring(2, 8);
+    const appTitle = title && title.trim().length > 0 ? title.trim() : "Untitled Fiddle";
 
-  // Move and rename
-  fs.renameSync(tempPath, targetPath);
-};
+    try {
+        const existing = db.getAppBySlug(safeSlug);
+        
+        if (existing) {
+            // CHECK OWNERSHIP
+            if (existing.user_id !== req.user.id) {
+                return res.status(403).json({ error: 'Slug exists and belongs to another user.' });
+            }
+            // If owned, we allow proceeding (it will overwrite)
+        }
 
+        const finalHtml = `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>${appTitle}</title>
+<style>${css}</style>
+</head>
+<body>
+${html}
+<script>${js}<\/script>
+</body>
+</html>`;
+
+        saveStringAsFile(finalHtml, safeSlug);
+        
+        if (existing) {
+            // Update DB entry
+            db.updateApp(safeSlug, appTitle, 'index.html'); // Ensure timestamp updates
+        } else {
+            // Create DB entry
+            db.createApp(req.user.id, safeSlug, 'Fiddle Project', appTitle);
+        }
+        
+        res.json({ success: true, redirect: '/dashboard' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Server Error' });
+    }
+});
+
+// --- ADMIN ---
+app.get('/admin', requireAuth, requireAdmin, (req, res) => {
+  const users = db.getAllUsers();
+  const apps = db.getAllApps();
+  const autoApprove = db.getSetting('auto_approve') === '1';
+  res.render('admin', { user: req.user, users, apps, autoApprove });
+});
+
+app.post('/admin/approve', requireAuth, requireAdmin, (req, res) => {
+  const { userId, action } = req.body;
+  db.updateUserStatus(userId, action === 'approve' ? 1 : 0);
+  res.redirect('/admin');
+});
+
+app.post('/admin/settings', requireAuth, requireAdmin, (req, res) => {
+  db.setSetting('auto_approve', req.body.autoApprove ? '1' : '0');
+  res.redirect('/admin');
+});
+
+app.post('/admin/feature', requireAuth, requireAdmin, (req, res) => {
+  db.updateAppFeatured(req.body.appId, req.body.isFeatured ? 1 : 0);
+  res.redirect('/admin');
+});
+
+// --- UPLOAD ---
 app.post('/upload', requireAuth, requireApproval, upload.single('htmlFile'), (req, res) => {
-  const { slug } = req.body;
+  const { slug, title } = req.body;
   const file = req.file;
 
   if (!file) return res.redirect('/dashboard');
 
-  // 1. FORCE SLUG FORMAT
-  // If user enters "My Cool Game!!!", this becomes "my-cool-game"
-  // If user enters nothing, fallback to filename "my-file.html" -> "my-file"
   let safeSlug = createSlug(slug);
-
-  // Fallback if slug became empty after sanitization or wasn't provided
-  if (!safeSlug) {
-    const filenameWithoutExt = file.originalname.split('.').slice(0, -1).join('.');
-    safeSlug = createSlug(filenameWithoutExt);
-  }
-
-  // If it's STILL empty (rare edge case like filename "???.html"), generate a random one
-  if (!safeSlug) {
-    safeSlug = 'app-' + Date.now();
-  }
+  if (!safeSlug) safeSlug = createSlug(file.originalname.split('.')[0]) || ('app-' + Date.now());
+  const appTitle = title && title.trim().length > 0 ? title.trim() : safeSlug;
 
   try {
     const existing = db.getAppBySlug(safeSlug);
     if (existing) {
       fs.unlinkSync(file.path);
       const apps = db.getAppsByUser(req.user.id);
-      return res.render('dashboard', {
-        user: req.user,
-        apps,
-        error: `The URL '${safeSlug}' is already taken. Please try a different name.`
-      });
+      return res.render('dashboard', { user: req.user, apps, error: 'Slug taken' });
     }
-
     moveAndRenameFile(file.path, safeSlug);
-    db.createApp(req.user.id, safeSlug, file.originalname);
-
+    db.createApp(req.user.id, safeSlug, file.originalname, appTitle);
     res.redirect('/dashboard');
-  } catch (err) {
-    console.error(err);
-    res.status(500).send("Server Error");
-  }
+  } catch (e) { res.status(500).send("Error"); }
 });
 
+// --- UPDATE (MODIFIED) ---
 app.post('/update', requireAuth, requireApproval, upload.single('htmlFile'), (req, res) => {
-  const { slug } = req.body;
+  const { slug, title } = req.body;
   const file = req.file;
 
-  if (!file || !slug) return res.redirect('/dashboard');
+  // Validation
+  if (!slug || !title) return res.redirect('/dashboard');
 
   const appData = db.getAppBySlug(slug);
-
-  // Security: Ensure the user owns this app
   if (!appData || appData.user_id !== req.user.id) {
-    fs.unlinkSync(file.path); // clean temp
+    if (file) fs.unlinkSync(file.path);
     return res.status(403).send("Unauthorized");
   }
 
   try {
-    moveAndRenameFile(file.path, slug); // Overwrites existing index.html
-    db.updateAppTimestamp(slug, file.originalname);
+    if (file) {
+      moveAndRenameFile(file.path, slug);
+      db.updateApp(slug, title, file.originalname);
+    } else {
+      db.updateApp(slug, title, null);
+    }
     res.redirect('/dashboard');
   } catch (err) {
     console.error(err);
@@ -171,90 +262,62 @@ app.post('/update', requireAuth, requireApproval, upload.single('htmlFile'), (re
   }
 });
 
-// --- Serving the Apps ---
-
-// Middleware to serve static files from the 'apps' directory
-// URL pattern: /sites/:slug/
+// --- STATIC SITES ---
 app.use('/sites', express.static(path.join(PROJECT_ROOT, 'apps')));
-
-// Redirect /sites/:slug to /sites/:slug/ to ensure relative paths work in the HTML
 app.use('/sites/:slug', (req, res, next) => {
-  if (!req.path.endsWith('/')) {
-    return res.redirect(req.originalUrl + '/');
-  }
+  if (!req.path.endsWith('/')) return res.redirect(req.originalUrl + '/');
   next();
 });
 
-// --- ADMIN ROUTES ---
+// 1. NEW: Load Editor with existing app data
+app.get('/fiddle/:slug', requireAuth, (req, res) => {
+    const { slug } = req.params;
+    const appData = db.getAppBySlug(slug);
 
-app.get('/admin', requireAuth, requireAdmin, (req, res) => {
-  const users = db.getAllUsers();
-  const autoApprove = db.getSetting('auto_approve') === '1';
-  res.render('admin', { user: req.user, users, autoApprove });
+    if (!appData) return res.status(404).send("App not found");
+    if (appData.user_id !== req.user.id) return res.status(403).send("Unauthorized");
+
+    const appDir = path.join(PROJECT_ROOT, 'apps', slug);
+    const filePath = path.join(appDir, 'index.html');
+
+    if (!fs.existsSync(filePath)) return res.status(404).send("File missing");
+
+    const fullContent = fs.readFileSync(filePath, 'utf-8');
+    
+    // Parse the file
+    const { html, css, js } = parseFileContent(fullContent);
+
+    res.render('fiddle', { 
+        user: req.user, 
+        prefill: {
+            slug: appData.slug,
+            title: appData.title,
+            html,
+            css,
+            js
+        }
+    });
 });
 
-app.post('/admin/approve', requireAuth, requireAdmin, (req, res) => {
-  const { userId, action } = req.body; // action: 'approve' or 'revoke'
-  const status = action === 'approve' ? 1 : 0;
-  db.updateUserStatus(userId, status);
-  res.redirect('/admin');
-});
 
-app.post('/admin/settings', requireAuth, requireAdmin, (req, res) => {
-  const { autoApprove } = req.body; // "on" if checked, undefined if not
-  const val = autoApprove ? '1' : '0';
-  db.setSetting('auto_approve', val);
-  res.redirect('/admin');
-});
-
-
-const PORT_FILE = 'port.txt';
-
+// --- START SERVER ---
 const startServer = (preferredPort) => {
-  // Use a standard function() so 'this' refers to the server instance
   const server = app.listen(preferredPort, function () {
     const address = this.address();
-    
-    // Safety check
-    if (!address) {
-        console.error("Server started, but address is not available.");
-        return;
-    }
-
+    if (!address) return;
     const actualPort = address.port;
     console.log(`Server running at http://localhost:${actualPort}`);
-    
-    // Save the working port to file
-    try {
-        fs.writeFileSync(PORT_FILE, actualPort.toString());
-    } catch (e) {
-        console.error("Could not save port to file:", e);
-    }
+    try { fs.writeFileSync(PORT_FILE, actualPort.toString()); } catch (e) { }
   });
-
-  // Handle port conflicts
   server.on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      console.log(`Port ${preferredPort} is busy, finding a new available port...`);
-      // Retry with port 0 (OS will assign a random available port)
-      startServer(0);
-    } else {
-      console.error('Server error:', err);
-    }
+    if (err.code === 'EADDRINUSE') startServer(0);
+    else console.error(err);
   });
 };
 
-// --- Execution Logic ---
-
-let portToUse = 3000; // Default fallback
-
-// 1. Try to load previously saved port
+let portToUse = 3000;
 if (fs.existsSync(PORT_FILE)) {
-  const savedPort = parseInt(fs.readFileSync(PORT_FILE, 'utf-8').trim());
-  if (!isNaN(savedPort)) {
-    portToUse = savedPort;
-  }
+  const saved = parseInt(fs.readFileSync(PORT_FILE, 'utf-8').trim());
+  if (!isNaN(saved)) portToUse = saved;
 }
-
-// 2. Start the server
 startServer(portToUse);
