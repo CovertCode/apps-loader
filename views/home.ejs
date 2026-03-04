@@ -77,6 +77,39 @@
                 <% } %>
     </div>
 
+    <!-- Bookmarks Section -->
+    <div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 border-t border-gray-200">
+        <h2 class="text-2xl font-bold tracking-tight text-gray-900 mb-6">Community Bookmarks</h2>
+        
+        <% if (publicBookmarks.length === 0) { %>
+            <p class="text-gray-500">No bookmarks shared yet.</p>
+        <% } else { %>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <% publicBookmarks.forEach(bm => { %>
+                    <a href="<%= bm.url %>" target="_blank" class="group bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md hover:border-indigo-300 transition-all p-4 flex items-center space-x-4">
+                        <div class="flex-shrink-0">
+                            <img class="h-10 w-10 rounded object-contain bg-gray-50 border border-gray-100 p-1 group-hover:scale-110 transition-transform" 
+                                 src="<%= bm.icon || 'https://www.google.com/s2/favicons?domain='+bm.url %>" 
+                                 onerror="this.src='https://via.placeholder.com/40?text=?'"
+                                 alt="">
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <p class="text-sm font-medium text-gray-900 truncate group-hover:text-indigo-600">
+                                <%= bm.title || 'Untitled' %>
+                            </p>
+                            <p class="text-xs text-gray-500 truncate">
+                                <%= new URL(bm.url).hostname %>
+                            </p>
+                        </div>
+                        <div class="flex-shrink-0 text-gray-300 group-hover:text-indigo-400">
+                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path></svg>
+                        </div>
+                    </a>
+                <% }); %>
+            </div>
+        <% } %>
+    </div>
+
 </body>
 
 </html>

@@ -123,3 +123,31 @@ export const setSetting = (key, value) => {
   const stmt = db.prepare('INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value');
   return stmt.run(key, value);
 };
+
+// --- BOOKMARK FUNCTIONS ---
+
+export const createBookmark = (userId, url, title, icon, isPublic) => {
+  const stmt = db.prepare('INSERT INTO bookmarks (user_id, url, title, icon, is_public) VALUES (?, ?, ?, ?, ?)');
+  return stmt.run(userId, url, title, icon, isPublic);
+};
+
+export const getBookmarksByUser = (userId) => {
+  const stmt = db.prepare('SELECT * FROM bookmarks WHERE user_id = ? ORDER BY created_at DESC');
+  return stmt.all(userId);
+};
+
+export const getPublicBookmarks = () => {
+  const stmt = db.prepare(`
+    SELECT bookmarks.*, users.username as author 
+    FROM bookmarks 
+    JOIN users ON bookmarks.user_id = users.id 
+    WHERE bookmarks.is_public = 1 
+    ORDER BY bookmarks.created_at DESC
+  `);
+  return stmt.all();
+};
+
+export const deleteBookmark = (id, userId) => {
+  const stmt = db.prepare('DELETE FROM bookmarks WHERE id = ? AND user_id = ?');
+  return stmt.run(id, userId);
+};

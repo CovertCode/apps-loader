@@ -4,3 +4,4 @@
 database.sqlite
 package-lock.json
 port.txt
+pnpm-lock.yaml

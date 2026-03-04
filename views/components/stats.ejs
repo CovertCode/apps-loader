@@ -1,0 +1,29 @@
+<div class="grid grid-cols-1 gap-5 sm:grid-cols-3 mb-8">
+    <!-- Projects Count -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:border-indigo-300 transition-colors">
+        <div class="px-5 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Total Projects</dt>
+            <dd class="mt-1 text-3xl font-bold text-gray-900"><%= apps.length %></dd>
+        </div>
+    </div>
+    <!-- Bookmarks Count -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:border-indigo-300 transition-colors">
+        <div class="px-5 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Saved Bookmarks</dt>
+            <dd class="mt-1 text-3xl font-bold text-gray-900"><%= bookmarks.length %></dd>
+        </div>
+    </div>
+    <!-- Status -->
+    <div class="bg-white overflow-hidden shadow-sm rounded-xl border border-gray-200 hover:border-indigo-300 transition-colors">
+        <div class="px-5 py-5">
+            <dt class="text-sm font-medium text-gray-500 truncate">Account Status</dt>
+            <dd class="mt-1">
+                <% if(user.is_approved) { %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-green-100 text-green-800">Active & Ready</span>
+                <% } else { %>
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-sm font-medium bg-yellow-100 text-yellow-800">Awaiting Approval</span>
+                <% } %>
+            </dd>
+        </div>
+    </div>
+</div>
