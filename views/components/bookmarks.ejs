@@ -38,7 +38,7 @@
                         <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Icon URL</label>
                         <div class="flex gap-2">
                             <div class="flex-shrink-0">
-                                <img id="bmPreviewIcon" src="https://via.placeholder.com/32?text=?" class="h-10 w-10 rounded-lg border border-gray-200 bg-white p-1 object-contain">
+                                <img id="bmPreviewIcon" src="https://placehold.co/32x32" class="h-10 w-10 rounded-lg border border-gray-200 bg-white p-1 object-contain">
                             </div>
                             <input type="text" name="icon" id="bmIcon" oninput="updateIconPreview(this.value)" class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm border p-2" placeholder="https://.../favicon.ico">
                         </div>
@@ -70,7 +70,7 @@
                 <% bookmarks.forEach(bm => { %>
                     <div class="group bg-white rounded-lg border border-gray-200 p-3 hover:border-indigo-300 hover:shadow-md transition-all flex items-start justify-between">
                         <a href="<%= bm.url %>" target="_blank" class="flex items-center gap-3 min-w-0 flex-1">
-                            <img src="<%= bm.icon || 'https://www.google.com/s2/favicons?domain='+bm.url %>" class="w-9 h-9 rounded-md bg-gray-50 border border-gray-100 object-contain p-0.5" onerror="this.src='https://via.placeholder.com/32?text=?'">
+                            <img src="<%= bm.icon || 'https://www.google.com/s2/favicons?domain='+bm.url %>" class="w-9 h-9 rounded-md bg-gray-50 border border-gray-100 object-contain p-0.5" onerror="this.src='https://placehold.co/32x32'">
                             <div class="min-w-0">
                                 <h4 class="text-sm font-semibold text-gray-900 truncate group-hover:text-indigo-600"><%= bm.title || 'Untitled' %></h4>
                                 <p class="text-xs text-gray-500 truncate"><%= new URL(bm.url).hostname %></p>
