@@ -65,7 +65,7 @@ const fetchUrlMetadata = async (targetUrl) => {
     } else {
       // Fallback to default /favicon.ico
       const origin = new URL(targetUrl).origin;
-      icon = origin + '/favicon.ico';
+      icon = origin + '/favicon.png';
     }
 
     return { title, icon, url: targetUrl };
