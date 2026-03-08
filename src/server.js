@@ -21,6 +21,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(PROJECT_ROOT, 'public')));
+app.use((req, res, next) => {
+    // Cache static assets (CSS, Images) for 1 day
+    if (req.url.match(/\.(css|js|png|jpg|ico)$/)) {
+        res.setHeader('Cache-Control', 'public, max-age=86400');
+    }
+    next();
+});
 const upload = multer({ dest: path.join(PROJECT_ROOT, 'uploads') });
 
 // --- Helper Functions ---
@@ -127,11 +134,18 @@ const parseFileContent = (fullContent) => {
 };
 
 // --- PUBLIC ROUTES ---
-app.get('/', (req, res) => {
-  const featuredApps = db.getFeaturedApps();
-  const publicBookmarks = db.getPublicBookmarks(); // NEW: Fetch Bookmarks
-  res.render('home', { featuredApps, publicBookmarks, userToken: req.cookies.token });
+app.get('/', async (req, res) => { // Added async
+  try {
+    const featuredApps = await db.getFeaturedApps();     // Added await
+    const publicBookmarks = await db.getPublicBookmarks(); // Added await
+
+    res.render('home', { featuredApps, publicBookmarks, userToken: req.cookies.token });
+  } catch (err) {
+    console.error("Home load error:", err);
+    res.render('home', { featuredApps: [], publicBookmarks: [], userToken: req.cookies.token });
+  }
 });
+
 app.get('/login', (req, res) => res.render('login', { error: null }));
 
 app.post('/login', (req, res) => {
