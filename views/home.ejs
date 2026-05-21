@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,16 +10,37 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-       <style>
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .link-card { transition: all 0.2s ease; }
-        .link-card:hover { transform: translateY(-2px); }
+    <style>
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .link-card {
+            transition: all 0.2s ease;
+        }
+
+        .link-card:hover {
+            transform: translateY(-2px);
+        }
     </style>
 </head>
-<body class="bg-gray-50 text-gray-800 font-sans h-screen flex overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">
+
+<body
+    class="bg-gray-50 text-gray-800 font-sans h-screen flex overflow-hidden selection:bg-indigo-100 selection:text-indigo-900">
 
     <!-- Sidebar -->
     <aside class="w-64 bg-white border-r border-gray-200 flex flex-col hidden md:flex z-10 flex-shrink-0">
@@ -28,44 +50,53 @@
             </div>
             <h1 class="text-xl font-bold text-gray-900 tracking-tight">Hub</h1>
         </div>
-        
+
         <div class="p-4 flex-1 overflow-y-auto">
             <div class="mb-6">
                 <% if (userToken) { %>
-                    <a href="/dashboard" class="flex items-center gap-3 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium transition-colors hover:bg-indigo-100 mb-2">
+                    <a href="/dashboard"
+                        class="flex items-center gap-3 px-3 py-2 bg-indigo-50 text-indigo-700 rounded-lg text-sm font-medium transition-colors hover:bg-indigo-100 mb-2">
                         <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
                         Go to Dashboard
                     </a>
-                    <a href="/logout" class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors">
+                    <a href="/logout"
+                        class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors">
                         <i data-lucide="log-out" class="w-4 h-4"></i>
                         Logout
                     </a>
-                <% } else { %>
-                    <a href="/login" class="flex items-center gap-3 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium transition-colors hover:bg-gray-800 mb-2">
-                        <i data-lucide="log-in" class="w-4 h-4"></i>
-                        Login
-                    </a>
-                    <a href="/register" class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors">
-                        <i data-lucide="user-plus" class="w-4 h-4"></i>
-                        Register
-                    </a>
-                <% } %>
+                    <% } else { %>
+                        <a href="/login"
+                            class="flex items-center gap-3 px-3 py-2 bg-gray-900 text-white rounded-lg text-sm font-medium transition-colors hover:bg-gray-800 mb-2">
+                            <i data-lucide="log-in" class="w-4 h-4"></i>
+                            Login
+                        </a>
+                        <a href="/register"
+                            class="flex items-center gap-3 px-3 py-2 text-gray-600 hover:bg-gray-50 rounded-lg text-sm font-medium transition-colors">
+                            <i data-lucide="user-plus" class="w-4 h-4"></i>
+                            Register
+                        </a>
+                        <% } %>
             </div>
 
-            <h2 class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3">Collections</h2>
+            <h2 onlink-target="collections-header" ondblclick="openPinModal()"
+                class="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3 px-3 cursor-help select-none">
+                Collections
+            </h2>
+
             <nav id="category-nav" class="space-y-1">
                 <!-- Injected via JS -->
             </nav>
         </div>
-        
+
         <% if (userToken) { %>
-        <div class="p-4 border-t border-gray-100">
-            <a href="/dashboard" class="w-full flex items-center justify-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 py-2.5 px-4 rounded-xl font-medium transition-colors">
-                <i data-lucide="plus" class="w-4 h-4"></i>
-                Add New Link
-            </a>
-        </div>
-        <% } %>
+            <div class="p-4 border-t border-gray-100">
+                <a href="/dashboard"
+                    class="w-full flex items-center justify-center gap-2 bg-indigo-50 text-indigo-600 hover:bg-indigo-100 hover:text-indigo-700 py-2.5 px-4 rounded-xl font-medium transition-colors">
+                    <i data-lucide="plus" class="w-4 h-4"></i>
+                    Add New Link
+                </a>
+            </div>
+            <% } %>
     </aside>
 
     <!-- Main Content -->
@@ -82,17 +113,20 @@
                 <a href="/dashboard" class="text-indigo-600 p-2 bg-indigo-50 rounded-lg">
                     <i data-lucide="layout-dashboard" class="w-5 h-5"></i>
                 </a>
-            <% } else { %>
-                <a href="/login" class="text-gray-600 font-medium text-sm">Login</a>
-            <% } %>
+                <% } else { %>
+                    <a href="/login" class="text-gray-600 font-medium text-sm">Login</a>
+                    <% } %>
         </header>
 
         <!-- Top Bar -->
-        <div class="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center hidden md:flex shrink-0">
+        <div
+            class="bg-white/80 backdrop-blur-sm border-b border-gray-200 sticky top-0 z-10 px-6 py-4 flex justify-between items-center hidden md:flex shrink-0">
             <h2 id="current-category-title" class="text-2xl font-bold text-gray-800">All Links</h2>
             <div class="relative w-72">
-                <i data-lucide="search" class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                <input type="text" id="search-input" placeholder="Search links & apps..." class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                <i data-lucide="search"
+                    class="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="search-input" placeholder="Search links & apps..."
+                    class="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
             </div>
         </div>
 
@@ -101,212 +135,239 @@
             <div id="links-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 pb-10">
                 <!-- Links injected here by JS -->
             </div>
-            
+
             <!-- Empty State -->
-            <div id="empty-state" class="hidden flex-col items-center justify-center h-full text-center max-w-sm mx-auto opacity-70 mt-20">
+            <div id="empty-state"
+                class="hidden flex-col items-center justify-center h-full text-center max-w-sm mx-auto opacity-70 mt-20">
                 <div class="bg-gray-100 p-4 rounded-full mb-4">
                     <i data-lucide="search-x" class="w-8 h-8 text-gray-400"></i>
                 </div>
                 <h3 class="text-lg font-medium text-gray-900 mb-1">No links found</h3>
                 <p class="text-sm text-gray-500 mb-6">Try adjusting your search or category filter.</p>
                 <% if (userToken) { %>
-                <a href="/dashboard" class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
-                    Go to Dashboard
-                </a>
-                <% } %>
+                    <a href="/dashboard"
+                        class="bg-indigo-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors shadow-sm">
+                        Go to Dashboard
+                    </a>
+                    <% } %>
             </div>
         </div>
     </main>
-
+    <div id="pin-modal"
+        class="fixed inset-0 bg-gray-900/60 backdrop-blur-md flex items-center justify-center z-[100] hidden">
+        <div class="bg-white rounded-2xl p-6 w-80 shadow-2xl border border-gray-100">
+            <div class="text-center mb-4">
+                <div class="bg-red-50 w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <i data-lucide="lock" class="w-6 h-6 text-red-600"></i>
+                </div>
+                <h3 class="font-bold text-gray-900">Unlock Vault</h3>
+                <p class="text-xs text-gray-500">Enter your security PIN to show hidden links.</p>
+            </div>
+            <input type="password" id="pin-input" maxlength="8"
+                class="w-full text-center text-2xl tracking-[1em] font-bold py-3 border-2 border-gray-100 rounded-xl focus:border-red-500 focus:outline-none bg-gray-50 mb-4">
+            <div class="flex gap-2">
+                <button onclick="closePinModal()" class="flex-1 py-2 text-sm font-medium text-gray-400">Cancel</button>
+                <button onclick="verifyPin()" id="verify-btn"
+                    class="flex-1 py-2 bg-red-600 text-white rounded-lg text-sm font-bold shadow-lg shadow-red-200">Unlock</button>
+            </div>
+        </div>
+    </div>
     <!-- Data Injection Script -->
     <script>
-        // We inject server-side data into a client-side JS variable
-        // This allows us to use the search/filter logic from your requested design
-        const rawApps = <%- JSON.stringify(featuredApps || []) %>;
-        const rawBookmarks = <%- JSON.stringify(publicBookmarks || []) %>;
+        // FIX: Absolutely NO spaces between < % - 
+        const rawApps = <% - JSON.stringify(featuredApps) %>;
+        const rawBookmarks = <% - JSON.stringify(publicBookmarks) %>;
 
-        // Transform data into a unified structure
         const links = [
             ...rawApps.map(app => ({
                 id: 'app-' + app.id,
                 title: app.title || app.slug,
                 url: `/sites/${app.slug}/`,
-                category: 'Apps', // Can be dynamic if you add category column to DB later
-                icon: '', // Apps don't have icons in DB yet, will use default
+                category: 'Apps',
                 type: 'app',
-                author: app.author
+                author: app.author,
+                initial: (app.title || app.slug).charAt(0).toUpperCase()
             })),
             ...rawBookmarks.map(bm => ({
                 id: 'bm-' + bm.id,
                 title: bm.title || 'Untitled',
                 url: bm.url,
                 category: 'Bookmarks',
-                icon: bm.icon,
                 type: 'bookmark',
-                author: bm.author
+                author: bm.author,
+                initial: (bm.title || 'U').charAt(0).toUpperCase()
             }))
         ];
 
         let currentFilter = 'All';
         let searchQuery = '';
+        let isVaultUnlocked = false;
 
-        function init() {
-            renderApp();
-            lucide.createIcons();
-            setupEventListeners();
-        }
-
-        function getCategories() {
-            const categories = new Set(links.map(link => link.category));
-            return Array.from(categories).sort();
-        }
-
-        // --- Render Functions ---
+        // --- Core Functions ---
 
         function renderSidebar() {
             const nav = document.getElementById('category-nav');
-            const categories = getCategories();
-            
-            // "All" Button
+            if (!nav) return;
+            const categories = Array.from(new Set(links.map(link => link.category))).sort();
+
             let html = `
-                <a href="#" onclick="setFilter('All')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFilter === 'All' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}">
-                    <i data-lucide="layers" class="w-4 h-4 ${currentFilter === 'All' ? 'text-indigo-600' : 'text-gray-400'}"></i>
-                    All Links
-                    <span class="ml-auto bg-gray-100 text-gray-500 py-0.5 px-2 rounded-full text-xs">${links.length}</span>
-                </a>
-            `;
+            <a href="#" onclick="setFilter('All')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${currentFilter === 'All' ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}">
+                <i data-lucide="layers" class="w-4 h-4 ${currentFilter === 'All' ? 'text-indigo-600' : 'text-gray-400'}"></i>
+                All Links
+                <span class="ml-auto bg-gray-100 text-gray-500 py-0.5 px-2 rounded-full text-xs">${links.length}</span>
+            </a>
+        `;
 
             categories.forEach(category => {
                 const count = links.filter(l => l.category === category).length;
                 const isActive = currentFilter === category;
-                
-                // Choose icon based on category name (simple logic)
-                let iconName = 'folder';
-                if(category === 'Apps') iconName = 'cpu';
-                if(category === 'Bookmarks') iconName = 'bookmark';
+                let iconName = category === 'Apps' ? 'cpu' : (category === 'Protected' ? 'lock' : 'bookmark');
 
                 html += `
-                    <a href="#" onclick="setFilter('${category}')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}">
-                        <i data-lucide="${iconName}" class="w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}"></i>
-                        ${category}
-                        <span class="ml-auto ${isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'} py-0.5 px-2 rounded-full text-xs">${count}</span>
-                    </a>
-                `;
+                <a href="#" onclick="setFilter('${category}')" class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${isActive ? 'bg-indigo-50 text-indigo-700' : 'text-gray-600 hover:bg-gray-50'}">
+                    <i data-lucide="${iconName}" class="w-4 h-4 ${isActive ? 'text-indigo-600' : 'text-gray-400'}"></i>
+                    ${category}
+                    <span class="ml-auto ${isActive ? 'bg-indigo-100 text-indigo-600' : 'bg-gray-100 text-gray-500'} py-0.5 px-2 rounded-full text-xs">${count}</span>
+                </a>
+            `;
             });
-
             nav.innerHTML = html;
             lucide.createIcons();
-            document.getElementById('current-category-title').textContent = currentFilter === 'All' ? 'All Links' : currentFilter;
         }
 
         function renderLinks() {
             const container = document.getElementById('links-container');
-            const emptyState = document.getElementById('empty-state');
-            
-            let filtered = links;
-            
-            // Filter by Category
-            if (currentFilter !== 'All') {
-                filtered = filtered.filter(l => l.category === currentFilter);
-            }
+            if (!container) return;
 
-            // Filter by Search
-            if (searchQuery) {
-                const lowerQuery = searchQuery.toLowerCase();
-                filtered = filtered.filter(l => 
-                    l.title.toLowerCase().includes(lowerQuery) || 
-                    l.url.toLowerCase().includes(lowerQuery) ||
-                    l.author.toLowerCase().includes(lowerQuery)
-                );
-            }
+            let filtered = links.filter(l => {
+                const matchesCat = currentFilter === 'All' || l.category === currentFilter;
+                const matchesSearch = l.title.toLowerCase().includes(searchQuery) || l.author.toLowerCase().includes(searchQuery);
+                return matchesCat && matchesSearch;
+            });
 
-            if (filtered.length === 0) {
-                container.innerHTML = '';
-                emptyState.classList.remove('hidden');
-                emptyState.classList.add('flex');
-            } else {
-                emptyState.classList.add('hidden');
-                emptyState.classList.remove('flex');
-
-                container.innerHTML = filtered.map(link => {
-                    // Fallback Icon Logic
-                    let imgHtml = '';
-                    if (link.icon) {
-                        imgHtml = `<img src="${link.icon}" alt="${link.title}" class="w-full h-full object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                                   <i data-lucide="globe" class="w-6 h-6 text-gray-400 hidden"></i>`;
-                    } else if (link.type === 'app') {
-                        // Default App Icon
-                         imgHtml = `<div class="bg-gradient-to-br from-indigo-500 to-purple-600 w-full h-full flex items-center justify-center text-white font-bold rounded-lg text-lg">
-                                        ${link.title.charAt(0).toUpperCase()}
-                                    </div>`;
-                    } else {
-                        // Fallback favicon fetcher
-                         imgHtml = `<img src="https://www.google.com/s2/favicons?domain=${new URL(link.url, window.location.origin).hostname}&sz=64" class="w-full h-full object-contain" onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
-                                    <i data-lucide="globe" class="w-6 h-6 text-gray-400 hidden"></i>`;
-                    }
-
-                    return `
-                    <div class="link-card bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md flex flex-col h-full group relative">
-                        <div class="flex items-center gap-4 mb-4">
-                            
-                            <div class="overflow-hidden">
-                                <h3 class="font-semibold text-gray-900 truncate" title="${link.title}">${link.title}</h3>
-                                <div class="flex items-center gap-2 mt-1">
-                                    <span class="text-xs font-medium text-gray-500">by ${link.author}</span>
-                                    <span class="text-[10px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded uppercase tracking-wide">${link.category}</span>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        <div class="mt-auto pt-4 flex gap-2">
-                            <a href="${link.url}" target="_blank" class="flex-1 flex items-center justify-center gap-2 bg-gray-50 hover:bg-gray-100 text-gray-700 py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200">
-                                Open
-                                <i data-lucide="external-link" class="w-3 h-3 text-gray-500"></i>
-                            </a>
-                            <button onclick="copyUrl('${link.url}')" class="p-2 text-gray-500 bg-gray-50 hover:bg-gray-100 hover:text-gray-800 rounded-lg border border-gray-200 transition-colors" title="Copy URL">
-                                <i data-lucide="copy" class="w-4 h-4"></i>
-                            </button>
-                        </div>
+            container.innerHTML = filtered.map(link => `
+            <div class="link-card bg-white rounded-xl p-5 border border-gray-200 shadow-sm hover:shadow-md flex flex-col h-full group relative">
+                <div class="flex items-center gap-4 mb-4">
+                    <div class="w-10 h-10 rounded-lg flex items-center justify-center font-bold text-white shrink-0 ${link.category === 'Apps' ? 'bg-indigo-500' : (link.category === 'Protected' ? 'bg-red-500' : 'bg-slate-400')}">
+                        ${link.initial}
                     </div>
-                `}).join('');
-                
-                lucide.createIcons();
-            }
+                    <div class="min-w-0">
+                        <h3 class="font-semibold text-gray-900 truncate">${link.title}</h3>
+                        <p class="text-[10px] text-gray-400 uppercase tracking-tight">by ${link.author}</p>
+                    </div>
+                </div>
+                <div class="mt-auto pt-4 flex gap-2">
+                    <a href="${link.url}" target="_blank" class="flex-1 flex items-center justify-center gap-2 bg-gray-50 hover:bg-indigo-600 hover:text-white py-2 rounded-lg text-sm font-medium transition-colors border border-gray-200">Open</a>
+                </div>
+            </div>
+        `).join('');
+            lucide.createIcons();
         }
 
         function renderApp() {
             renderSidebar();
             renderLinks();
+            if (document.getElementById('current-category-title')) {
+                document.getElementById('current-category-title').textContent = currentFilter === 'All' ? 'All Links' : currentFilter;
+            }
         }
 
-        // --- Interaction ---
+        // --- Global Actions (attached to window for HTML events) ---
 
-        function setFilter(category) {
+        window.setFilter = (category) => {
             currentFilter = category;
             renderApp();
-        }
+        };
 
-        function copyUrl(url) {
-            // Handle relative URLs for apps
-            if (url.startsWith('/')) {
-                url = window.location.origin + url;
+        window.copyUrl = (url) => {
+            const finalUrl = url.startsWith('/') ? window.location.origin + url : url;
+            navigator.clipboard.writeText(finalUrl);
+        };
+
+        // --- Vault / PIN Functions ---
+
+        window.openPinModal = () => {
+            if (isVaultUnlocked) return;
+            const modal = document.getElementById('pin-modal');
+            if (modal) {
+                modal.classList.remove('hidden');
+                document.getElementById('pin-input').focus();
             }
-            navigator.clipboard.writeText(url).then(() => {
-                // Could add toast here
-            });
-        }
+        };
 
-        function setupEventListeners() {
+        window.closePinModal = () => {
+            const modal = document.getElementById('pin-modal');
+            if (modal) {
+                modal.classList.add('hidden');
+                document.getElementById('pin-input').value = '';
+            }
+        };
+
+        window.verifyPin = async () => {
+            const pinInput = document.getElementById('pin-input');
+            const pin = pinInput.value;
+            const btn = document.getElementById('verify-btn');
+            const targetUser = links.length > 0 ? links[0].author : 'admin';
+
+            btn.textContent = 'Checking...';
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/verify-pin', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pin, username: targetUser })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    isVaultUnlocked = true;
+                    const newLinks = data.links.map(bm => ({
+                        id: 'bm-' + bm.id,
+                        title: bm.title || 'Untitled',
+                        url: bm.url,
+                        category: 'Protected',
+                        author: bm.author,
+                        initial: (bm.title || 'P').charAt(0).toUpperCase()
+                    }));
+
+                    links.push(...newLinks);
+                    closePinModal();
+                    renderApp();
+
+                    const header = document.querySelector('[onlink-target="collections-header"]');
+                    if (header) {
+                        header.innerHTML = 'Vault Unlocked <i data-lucide="unlock" class="inline w-3 h-3 text-red-500 ml-1"></i>';
+                        lucide.createIcons();
+                    }
+                } else {
+                    alert('Invalid PIN');
+                }
+            } catch (e) {
+                alert('Verification failed');
+            } finally {
+                btn.textContent = 'Unlock';
+                btn.disabled = false;
+            }
+        };
+
+        // --- Initialization ---
+
+        document.addEventListener('DOMContentLoaded', () => {
+            renderApp();
+            lucide.createIcons();
+
             const searchInput = document.getElementById('search-input');
-            if(searchInput) {
+            if (searchInput) {
+                searchInput.focus();
                 searchInput.addEventListener('input', (e) => {
-                    searchQuery = e.target.value;
+                    searchQuery = e.target.value.toLowerCase();
                     renderLinks();
                 });
             }
-        }
-
-        document.addEventListener('DOMContentLoaded', init);
+        });
     </script>
+
 </body>
+
 </html>

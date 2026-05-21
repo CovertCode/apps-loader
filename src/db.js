@@ -36,7 +36,8 @@ db.exec(`
     username TEXT UNIQUE,
     password TEXT,
     role TEXT DEFAULT 'user',
-    is_approved INTEGER DEFAULT 0
+    is_approved INTEGER DEFAULT 0,
+    pin TEXT
   );
 
   CREATE TABLE IF NOT EXISTS apps (
@@ -47,6 +48,18 @@ db.exec(`
     title TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     is_featured INTEGER DEFAULT 0,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  );
+
+  CREATE TABLE IF NOT EXISTS bookmarks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    url TEXT NOT NULL,
+    title TEXT,
+    icon TEXT,
+    is_public INTEGER DEFAULT 1,
+    is_protected INTEGER DEFAULT 0,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY(user_id) REFERENCES users(id)
   );
 
@@ -170,11 +183,9 @@ export const setSetting = (key, value) => {
 
 // --- BOOKMARK FUNCTIONS ---
 
-export const createBookmark = (userId, url, title, icon, isPublic) => {
-  const stmt = db.prepare('INSERT INTO bookmarks (user_id, url, title, icon, is_public) VALUES (?, ?, ?, ?, ?)');
-  const res = stmt.run(userId, url, title, icon, isPublic);
-  // CLEAR CACHE
-  if (isPublic) invalidateCache([CACHE_KEYS.PUBLIC_BOOKMARKS]);
+export const createBookmark = (userId, url, title, icon, isPublic, isProtected = 0) => {
+  const stmt = db.prepare('INSERT INTO bookmarks (user_id, url, title, icon, is_public, is_protected) VALUES (?, ?, ?, ?, ?, ?)');
+  const res = stmt.run(userId, url, title, icon, isPublic, isProtected);
   return res;
 };
 
@@ -189,14 +200,12 @@ export const getPublicBookmarks = async () => {
   if (cached) return cached;
 
   // 2. Fetch DB
-  const stmt = db.prepare(`
+  const data = db.prepare(`
     SELECT bookmarks.*, users.username as author 
-    FROM bookmarks 
-    JOIN users ON bookmarks.user_id = users.id 
-    WHERE bookmarks.is_public = 1 
+    FROM bookmarks JOIN users ON bookmarks.user_id = users.id 
+    WHERE bookmarks.is_public = 1 AND bookmarks.is_protected = 0
     ORDER BY bookmarks.created_at DESC
-  `);
-  const data = stmt.all();
+  `).all();
 
   // 3. Set Cache
   await cache.set(CACHE_KEYS.PUBLIC_BOOKMARKS, data, 1000 * 60 * 60 * 24);
@@ -210,4 +219,17 @@ export const deleteBookmark = (id, userId) => {
   // CLEAR CACHE
   invalidateCache([CACHE_KEYS.PUBLIC_BOOKMARKS]);
   return res;
+};
+
+export const setUserPin = (userId, hashedPin) => {
+  const stmt = db.prepare('UPDATE users SET pin = ? WHERE id = ?');
+  return stmt.run(hashedPin, userId);
+};
+
+export const getProtectedBookmarks = (userId) => {
+  return db.prepare(`
+        SELECT bookmarks.*, users.username as author 
+        FROM bookmarks JOIN users ON bookmarks.user_id = users.id 
+        WHERE bookmarks.is_protected = 1 AND bookmarks.user_id = ?
+    `).all(userId);
 };

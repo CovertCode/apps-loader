@@ -22,11 +22,11 @@ app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(PROJECT_ROOT, 'public')));
 app.use((req, res, next) => {
-    // Cache static assets (CSS, Images) for 1 day
-    if (req.url.match(/\.(css|js|png|jpg|ico)$/)) {
-        res.setHeader('Cache-Control', 'public, max-age=86400');
-    }
-    next();
+  // Cache static assets (CSS, Images) for 1 day
+  if (req.url.match(/\.(css|js|png|jpg|ico)$/)) {
+    res.setHeader('Cache-Control', 'public, max-age=86400');
+  }
+  next();
 });
 const upload = multer({ dest: path.join(PROJECT_ROOT, 'uploads') });
 
@@ -134,14 +134,31 @@ const parseFileContent = (fullContent) => {
 };
 
 // --- PUBLIC ROUTES ---
-app.get('/', async (req, res) => { // Added async
-  try {
-    const featuredApps = await db.getFeaturedApps();     // Added await
-    const publicBookmarks = await db.getPublicBookmarks(); // Added await
+// app.get('/', async (req, res) => { // Added async
+//   try {
+//     const featuredApps = await db.getFeaturedApps();     // Added await
+//     const publicBookmarks = await db.getPublicBookmarks(); // Added await
 
-    res.render('home', { featuredApps, publicBookmarks, userToken: req.cookies.token });
+//     res.render('home', { featuredApps, publicBookmarks, userToken: req.cookies.token });
+//   } catch (err) {
+//     console.error("Home load error:", err);
+//     res.render('home', { featuredApps: [], publicBookmarks: [], userToken: req.cookies.token });
+//   }
+// });
+
+app.get('/', async (req, res) => {
+  try {
+    const featuredApps = await db.getFeaturedApps();
+    const publicBookmarks = await db.getPublicBookmarks();
+
+    res.render('home', {
+      // Ensure these are arrays even if empty
+      featuredApps: featuredApps || [],
+      publicBookmarks: publicBookmarks || [],
+      userToken: req.cookies.token
+    });
   } catch (err) {
-    console.error("Home load error:", err);
+    console.error(err);
     res.render('home', { featuredApps: [], publicBookmarks: [], userToken: req.cookies.token });
   }
 });
@@ -385,6 +402,30 @@ app.post('/bookmarks/delete', requireAuth, (req, res) => {
   const { id } = req.body;
   db.deleteBookmark(id, req.user.id);
   res.redirect('/dashboard');
+});
+
+// --- PIN SETTING (Add to Dashboard or a Settings route) ---
+app.post('/settings/pin', requireAuth, (req, res) => {
+  const { pin } = req.body;
+  if (!pin || pin.length < 4) return res.redirect('/dashboard?error=Pin too short');
+  const hashedPin = bcrypt.hashSync(pin, 10);
+  db.setUserPin(req.user.id, hashedPin);
+  res.redirect('/dashboard');
+});
+
+// --- PIN VERIFICATION (For Homepage) ---
+app.post('/api/verify-pin', async (req, res) => {
+  const { pin, username } = req.body; // We need username to know which user's vault to open
+  const user = db.findUserByUsername(username);
+
+  if (!user || !user.pin) return res.status(403).json({ error: 'Vault not configured' });
+
+  const isValid = bcrypt.compareSync(pin, user.pin);
+  if (!isValid) return res.status(403).json({ error: 'Incorrect PIN' });
+
+  // If valid, return the protected bookmarks
+  const protectedLinks = db.getProtectedBookmarks(user.id);
+  res.json({ success: true, links: protectedLinks });
 });
 
 
